@@ -1,0 +1,34 @@
+$down-index: 5;
+$up-index: 10;
+$normal_cursor: default;
+$tag_cursor: crosshair;
+
+.image-tag-wrapper{
+  z-index: $down-index;
+  position:relative;
+  
+  .tagdiv{
+    position: absolute;
+    background-color:black;
+    color:white;
+    z-index: $up-index;
+    cursor: $normal_cursor;
+  }
+  
+  .tagform-wrapper{
+    position: absolute;
+    background-color:black;
+    color:white;
+    width:200;
+    z-index: $up-index;
+    cursor: $normal_cursor;
+    
+    a{
+      color:white;
+    }
+  }
+}
+
+.image-tag-wrapper.enabled{
+  cursor: $tag_cursor;
+}

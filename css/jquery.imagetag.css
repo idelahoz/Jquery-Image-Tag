@@ -1,0 +1,29 @@
+.image-tag-wrapper {
+  z-index: 5;
+  position: relative;
+}
+
+.image-tag-wrapper .tagdiv {
+  position: absolute;
+  background-color: black;
+  color: white;
+  z-index: 10;
+  cursor: default;
+}
+
+.image-tag-wrapper .tagform-wrapper {
+  position: absolute;
+  background-color: black;
+  color: white;
+  width: 200;
+  z-index: 10;
+  cursor: default;
+}
+
+.image-tag-wrapper .tagform-wrapper a {
+  color: white;
+}
+
+.image-tag-wrapper.enabled {
+  cursor: crosshair;
+}
