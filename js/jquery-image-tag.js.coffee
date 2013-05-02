@@ -17,6 +17,8 @@ $.fn.imageTag = (options) ->
     idProperty: 'id'
     propertyX: 'x'
     propertyY: 'y'
+    distanceUnity: 'pixels' #posible values : pixel, percentage
+    requiredFields: ['name']
     tags: []
     showTagsWhenDisabled: true
     }
@@ -25,15 +27,26 @@ $.fn.imageTag = (options) ->
   _initPlugin = (el) =>
     wrap = _createWrapper(el)
     wrap.addClass("enabled") if wrap.data('image-tag-enabled')
-    _add_tags wrap, @options.tags
+    if $.fn.imagesLoaded
+      wrap.imagesLoaded( () =>  _add_tags wrap, @options.tags)
+    else
+      _add_tags wrap, @options.tags
+      
     _hide_tags(wrap) if !@options.showTagsWhenDisabled && !wrap.data('image-tag-enabled')
     $(wrap).click(
       (e) =>
         e.preventDefault()
         e.stopPropagation()
+        unless e.offsetX or e.offsetY
+          offX = e.pageX - $(e.target).offset().left
+          offY = e.pageY - $(e.target).offset().top
+        else
+          offX = e.offsetX
+          offY = e.offsetY
+          
         if wrap.data('image-tag-enabled')
-          tag = $("<div class = 'tagdiv unsaved'>Tag Here</div>")
-          tag.css top:e.offsetY, left:e.offsetX
+          tag = $("<div class = 'tagdiv unsaved'>Tag here</div>")
+          tag.css top:offY, left:offX
           
           _remove_unsaved_elements(wrap)
           
@@ -43,8 +56,7 @@ $.fn.imageTag = (options) ->
           # attatch submit event to the internal form  
           _attatch_tagform_events tagform
           
-          
-          tagform.css top:e.offsetY + 20, left:e.offsetX
+          tagform.css top:offY + 20, left:offX
           stopPropagation = (e) -> e.stopPropagation()
           
           #prevent from execute this event on the tag and the form
@@ -57,8 +69,8 @@ $.fn.imageTag = (options) ->
           
           #set the focus on the field for the label
           tagform.find("input[name=#{@options.labelProperty}]").focus()
-          tagform.find("input[name=#{@options.propertyX}]").val(e.offsetX)
-          tagform.find("input[name=#{@options.propertyY}]").val(e.offsetY)
+          tagform.find("input[name=#{@options.propertyX}]").val(eval("_pixels_to_#{@options.distanceUnity}")(wrap, 'x', offX))
+          tagform.find("input[name=#{@options.propertyY}]").val(eval("_pixels_to_#{@options.distanceUnity}")(wrap, 'y', offY))
     )
     
   _attatch_tagform_events = (formWrap) =>
@@ -67,7 +79,7 @@ $.fn.imageTag = (options) ->
       e.preventDefault();
       form = $(@)
       label = form.find("input[name=#{imageTag.options.labelProperty}]").val()
-      if label.trim() != ""
+      if _check_required_fields(formWrap)
         imageTag.options.onTag(form)
         
         formWrap.parent().find(".tagdiv.unsaved").text(label)
@@ -78,6 +90,16 @@ $.fn.imageTag = (options) ->
       e.stopPropagation()
       e.preventDefault()
       _remove_unsaved_elements(formWrap.parent())
+      
+  _check_required_fields = (formWrap) =>
+    filled = true;
+    selector = $.map(@options.requiredFields, (field) -> "input[name=#{field}]" ).join(",")
+    $(selector).each(
+      (index, el ) ->
+        filled = false if $(el).val().trim() == ""
+        true
+    )
+    filled
     
   #create the div to contain the image to hold the tags  
   _createWrapper = (el) =>
@@ -155,8 +177,21 @@ $.fn.imageTag = (options) ->
   _add_tags = (wrapper, tags) =>
     $.each tags, (index, tagInfo) =>
       tag = $("<div class = 'tagdiv' data-tag_id='#{tagInfo[@options.idProperty]}'>#{tagInfo[@options.labelProperty] || 'unnamed'}</div>")
-      tag.css top: tagInfo[@options.propertyY], left: tagInfo[@options.propertyX]
+      tag.css 
+       top: eval("_#{@options.distanceUnity}_to_pixels")(wrapper, 'y', tagInfo[@options.propertyY]),
+       left: eval("_#{@options.distanceUnity}_to_pixels")(wrapper, 'x', tagInfo[@options.propertyX])
       wrapper.append tag
+      
+  _pixels_to_percentage = (wrapper, orientation, pixels) =>
+    lenght = if orientation is "x" then wrapper.width() else wrapper.height()
+    pixels/lenght
+    
+  _percentage_to_pixels = (wrapper, orientation, percentage) =>
+    lenght = if orientation is "x" then wrapper.width() else wrapper.height()
+    lenght * percentage
+    
+  _pixels_to_pixels = (wrapper, orientation, pixels) =>
+    pixels
   
   switch options
     when "disable" then _disable_all()
@@ -166,5 +201,4 @@ $.fn.imageTag = (options) ->
     when "show_tag" then _show_tag_all.apply( @, Array.prototype.slice.call( arguments, 1 ))
     when "hide_tag" then _hide_tag_all.apply( @, Array.prototype.slice.call( arguments, 1 ))
     when "remove_tag" then _remove_tag_all.apply( @, Array.prototype.slice.call( arguments, 1 ))
-    
     else _init()

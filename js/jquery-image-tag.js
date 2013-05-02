@@ -11,7 +11,7 @@
   $ = jQuery;
 
   $.fn.imageTag = function(options) {
-    var _add_tags, _attatch_tagform_events, _createWrapper, _disable, _disable_all, _enable, _enable_all, _hide_tag, _hide_tag_all, _hide_tags, _hide_tags_all, _init, _initPlugin, _remove_tag, _remove_tag_all, _remove_unsaved_elements, _set_enable, _show_tag, _show_tag_all, _show_tags, _show_tags_all,
+    var _add_tags, _attatch_tagform_events, _check_required_fields, _createWrapper, _disable, _disable_all, _enable, _enable_all, _hide_tag, _hide_tag_all, _hide_tags, _hide_tags_all, _init, _initPlugin, _percentage_to_pixels, _pixels_to_percentage, _pixels_to_pixels, _remove_tag, _remove_tag_all, _remove_unsaved_elements, _set_enable, _show_tag, _show_tag_all, _show_tags, _show_tags_all,
       _this = this;
     this.options = $.extend({
       enableTag: true,
@@ -21,6 +21,8 @@
       idProperty: 'id',
       propertyX: 'x',
       propertyY: 'y',
+      distanceUnity: 'pixels',
+      requiredFields: ['name'],
       tags: [],
       showTagsWhenDisabled: true
     }, options);
@@ -30,27 +32,40 @@
       if (wrap.data('image-tag-enabled')) {
         wrap.addClass("enabled");
       }
-      _add_tags(wrap, _this.options.tags);
+      if ($.fn.imagesLoaded) {
+        wrap.imagesLoaded(function() {
+          return _add_tags(wrap, _this.options.tags);
+        });
+      } else {
+        _add_tags(wrap, _this.options.tags);
+      }
       if (!_this.options.showTagsWhenDisabled && !wrap.data('image-tag-enabled')) {
         _hide_tags(wrap);
       }
       return $(wrap).click(function(e) {
-        var stopPropagation, tag, tagform;
+        var offX, offY, stopPropagation, tag, tagform;
         e.preventDefault();
         e.stopPropagation();
+        if (!(e.offsetX || e.offsetY)) {
+          offX = e.pageX - $(e.target).offset().left;
+          offY = e.pageY - $(e.target).offset().top;
+        } else {
+          offX = e.offsetX;
+          offY = e.offsetY;
+        }
         if (wrap.data('image-tag-enabled')) {
-          tag = $("<div class = 'tagdiv unsaved'>Tag Here</div>");
+          tag = $("<div class = 'tagdiv unsaved'>Tag here</div>");
           tag.css({
-            top: e.offsetY,
-            left: e.offsetX
+            top: offY,
+            left: offX
           });
           _remove_unsaved_elements(wrap);
           tagform = $('<div class="tagform-wrapper">').append($(_this.options.tagForm).clone());
           tagform.append('<a class="cancel-tag" href="#">Cancel</a>');
           _attatch_tagform_events(tagform);
           tagform.css({
-            top: e.offsetY + 20,
-            left: e.offsetX
+            top: offY + 20,
+            left: offX
           });
           stopPropagation = function(e) {
             return e.stopPropagation();
@@ -60,8 +75,8 @@
           $(wrap).append(tag);
           $(wrap).append(tagform);
           tagform.find("input[name=" + _this.options.labelProperty + "]").focus();
-          tagform.find("input[name=" + _this.options.propertyX + "]").val(e.offsetX);
-          return tagform.find("input[name=" + _this.options.propertyY + "]").val(e.offsetY);
+          tagform.find("input[name=" + _this.options.propertyX + "]").val(eval("_pixels_to_" + _this.options.distanceUnity)(wrap, 'x', offX));
+          return tagform.find("input[name=" + _this.options.propertyY + "]").val(eval("_pixels_to_" + _this.options.distanceUnity)(wrap, 'y', offY));
         }
       });
     };
@@ -73,7 +88,7 @@
         e.preventDefault();
         form = $(this);
         label = form.find("input[name=" + imageTag.options.labelProperty + "]").val();
-        if (label.trim() !== "") {
+        if (_check_required_fields(formWrap)) {
           imageTag.options.onTag(form);
           formWrap.parent().find(".tagdiv.unsaved").text(label);
           formWrap.parent().find(".tagdiv.unsaved").removeClass("unsaved");
@@ -85,6 +100,20 @@
         e.preventDefault();
         return _remove_unsaved_elements(formWrap.parent());
       });
+    };
+    _check_required_fields = function(formWrap) {
+      var filled, selector;
+      filled = true;
+      selector = $.map(_this.options.requiredFields, function(field) {
+        return "input[name=" + field + "]";
+      }).join(",");
+      $(selector).each(function(index, el) {
+        if ($(el).val().trim() === "") {
+          filled = false;
+        }
+        return true;
+      });
+      return filled;
     };
     _createWrapper = function(el) {
       var wrap;
@@ -174,11 +203,24 @@
         var tag;
         tag = $("<div class = 'tagdiv' data-tag_id='" + tagInfo[_this.options.idProperty] + "'>" + (tagInfo[_this.options.labelProperty] || 'unnamed') + "</div>");
         tag.css({
-          top: tagInfo[_this.options.propertyY],
-          left: tagInfo[_this.options.propertyX]
+          top: eval("_" + _this.options.distanceUnity + "_to_pixels")(wrapper, 'y', tagInfo[_this.options.propertyY]),
+          left: eval("_" + _this.options.distanceUnity + "_to_pixels")(wrapper, 'x', tagInfo[_this.options.propertyX])
         });
         return wrapper.append(tag);
       });
+    };
+    _pixels_to_percentage = function(wrapper, orientation, pixels) {
+      var lenght;
+      lenght = orientation === "x" ? wrapper.width() : wrapper.height();
+      return pixels / lenght;
+    };
+    _percentage_to_pixels = function(wrapper, orientation, percentage) {
+      var lenght;
+      lenght = orientation === "x" ? wrapper.width() : wrapper.height();
+      return lenght * percentage;
+    };
+    _pixels_to_pixels = function(wrapper, orientation, pixels) {
+      return pixels;
     };
     switch (options) {
       case "disable":

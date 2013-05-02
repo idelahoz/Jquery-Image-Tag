@@ -1,0 +1,38 @@
+<html>
+  <head>
+    <title>Jquery image tag example</title>
+    <LINK href="../css/jquery.imagetag.css" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    <h1>some examples of jquery image tag plugin</h1>
+    
+    <h4>basic example(with default behavior and default form)</h4>
+    <image src='julia.jpg' style='height:700px' id='image1'></image>
+    
+    <h4>custom form example</h4>
+    <p>you can define a custom form to collect tag's data, and specify the name of the attribute to take the tag title setting <strong>labelProperty</strong> option(default is name) <br>
+      you need to make sure to have the fields for x and y coordinates (default is x and y, but you can specify it setting <strong>propertyX</strong> and <strong>propertyY</strong> on the options) </p>
+    <image src='scarlett.jpg' id='image2'></image>
+  
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+    <script src='../js/jquery-image-tag.js'></script>
+    
+    <div style='display:none'>
+      <form id='image2form'>
+        <label>title</label>
+        <input type='text' name='title'> </input>
+        <label>Comment</label>
+        <input type='textarea' name='comment'> </input>
+        <input type='submit' value='Tag'></input>
+      </form>
+    </div>
+    
+    <script>
+      $(function(){
+        $('#image1').imageTag();
+        
+        $('#image2').imageTag({tagForm: $("#image2form"), labelProperty:'title'});
+      })
+    </script>
+  </body>
+</html>
